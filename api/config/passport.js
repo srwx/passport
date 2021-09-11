@@ -10,9 +10,29 @@ module.exports = function (passport) {
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         callbackURL: "/api/auth/google/callback",
       },
+      // Call this function after user select gmail account
       async (accessToken, refreshToken, profile, done) => {
-        console.log(`--------------------------------------`)
-        console.log(profile)
+        const newUser = {
+          googleId: profile.id,
+          displayName: profile.displayName,
+          firstname: profile.name.givenName,
+          lastname: profile.name.familyName,
+          image: profile.photos[0].value,
+        }
+        try {
+          let user = await UserGoogle.findOne({ googleId: newUser.googleId })
+
+          if (user) {
+            // this google account already registered
+            done(null, user)
+          } else {
+            // this google account not register
+            user = await UserGoogle.create(newUser)
+            done(null, user)
+          }
+        } catch (err) {
+          console.log(err)
+        }
       }
     )
   )
